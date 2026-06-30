@@ -101,23 +101,29 @@ class AmbientRecognitionService : Service() {
                             setAudioSource(MediaRecorder.AudioSource.MIC)
                             setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
                             setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-                            setAudioEncodingBitRate(128000)
-                            setAudioSamplingRate(44100)
+                            setAudioEncodingBitRate(256000)
+                            setAudioSamplingRate(48000)
                             setOutputFile(tempFile.absolutePath)
                             prepare()
                             start()
                         }
 
                         Log.d("AmbientSong", "Recording started...")
-                        delay(12000) // record for 12 seconds
+                        delay(15000) // record for 15 seconds
                         Log.d("AmbientSong", "Recording stopped.")
 
                     try {
-                        recorder.stop()
+                        recorder?.stop()
                     } catch (e: RuntimeException) {
                         // Thrown if no valid audio data has been received
                         Log.e("AmbientSong", "MediaRecorder.stop() failed", e)
                     }
+                    try {
+                        recorder?.release()
+                    } catch (e: Exception) {
+                        Log.e("AmbientSong", "MediaRecorder.release() failed", e)
+                    }
+                    recorder = null
                     isRecording = false
 
                     // Identify song
@@ -153,8 +159,13 @@ class AmbientRecognitionService : Service() {
                 } catch (e: Exception) {
                     Log.e("AmbientSong", "Error in recognition loop: ${e.message}", e)
                     isRecording = false
-                    serviceStatus.value = "Error. Retrying..."
-                    delay(5000) // 5 seconds backoff on error
+                    if (e.message?.contains("Rate Limit") == true) {
+                        serviceStatus.value = "API Limit Reached. Waiting..."
+                        delay(15000) // wait longer if rate limited
+                    } else {
+                        serviceStatus.value = "Error. Retrying..."
+                        delay(5000) // 5 seconds backoff on error
+                    }
                 } finally {
                     try {
                         recorder?.release()

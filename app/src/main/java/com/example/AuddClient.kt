@@ -99,10 +99,15 @@ object AuddClient {
                     }
                 }
             } else {
-                Log.e("AuddClient", "Error from AudD: ${jsonResponse.optJSONObject("error")?.optString("error_message")}")
+                val errorMsg = jsonResponse.optJSONObject("error")?.optString("error_message") ?: "Unknown API error"
+                Log.e("AuddClient", "Error from AudD: $errorMsg")
+                if (errorMsg.contains("rate limit", ignoreCase = true) || errorMsg.contains("token", ignoreCase = true)) {
+                    throw Exception("API Rate Limit or Token Error: $errorMsg")
+                }
             }
         } catch (e: Exception) {
             Log.e("AuddClient", "Exception during song identification: ${e.message}", e)
+            throw e // Re-throw to allow the service to handle backoff
         }
         return@withContext null
     }
