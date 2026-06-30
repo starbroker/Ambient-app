@@ -157,22 +157,12 @@ fun MainScreen(historyFlow: Flow<List<Song>>, onClearHistory: () -> Unit) {
                         }
                     } else {
                         GlassCard(modifier = Modifier.fillMaxWidth().animateContentSize()) {
-                            val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-                            val pulseScale by infiniteTransition.animateFloat(
-                                initialValue = 1f,
-                                targetValue = if (isServiceActive) 1.03f else 1f,
-                                animationSpec = infiniteRepeatable(
-                                    animation = tween(1000, easing = FastOutSlowInEasing),
-                                    repeatMode = RepeatMode.Reverse
-                                ), label = "scale"
-                            )
-
                             Text(
                                 text = if (isServiceActive) "Service is Running" else "Service is Stopped",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp,
                                 color = textColor,
-                                modifier = Modifier.align(Alignment.CenterHorizontally).scale(if (isServiceActive) pulseScale else 1f)
+                                modifier = Modifier.align(Alignment.CenterHorizontally)
                             )
                             Spacer(modifier = Modifier.height(24.dp))
                             
@@ -201,7 +191,7 @@ fun MainScreen(historyFlow: Flow<List<Song>>, onClearHistory: () -> Unit) {
                                     contentColor = Color.Black
                                 ),
                                 shape = RoundedCornerShape(24.dp),
-                                modifier = Modifier.height(56.dp).fillMaxWidth().scale(if (isServiceActive) pulseScale else 1f)
+                                modifier = Modifier.height(56.dp).fillMaxWidth()
                             ) {
                                 AnimatedContent(
                                     targetState = isServiceActive,
