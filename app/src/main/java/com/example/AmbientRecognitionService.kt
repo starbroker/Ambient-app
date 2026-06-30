@@ -41,6 +41,7 @@ class AmbientRecognitionService : Service() {
         const val CHANNEL_ID = "AmbientSongChannel"
         const val NOTIFICATION_ID = 1
         var isServiceRunning = false
+        val serviceStatus = kotlinx.coroutines.flow.MutableStateFlow("Idle")
     }
 
     override fun onCreate() {
@@ -81,6 +82,7 @@ class AmbientRecognitionService : Service() {
                 val tempFile = File(cacheDir, "ambient_audio.mp4")
                 try {
                     // Record audio
+                    serviceStatus.value = "Listening..."
                     isRecording = true
                     val recorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                         MediaRecorder(this@AmbientRecognitionService)
@@ -107,9 +109,11 @@ class AmbientRecognitionService : Service() {
                     isRecording = false
 
                     // Identify song
+                    serviceStatus.value = "Identifying..."
                     val result = AuddClient.identifySong(tempFile)
                     if (result != null) {
                         Log.d("AmbientSong", "Found song: ${result.title} by ${result.artist}")
+                        serviceStatus.value = "Found: ${result.title}"
                         val now = System.currentTimeMillis()
                         
                         val existingSongs = db.songDao().getRecentSongs()
@@ -127,6 +131,7 @@ class AmbientRecognitionService : Service() {
                             lastDetectedSongTime = now
                         }
                         // Wait before next listen to avoid spam and save battery
+                        serviceStatus.value = "Waiting..."
                         delay(60000) // 1 minute
                     } else {
                         Log.d("AmbientSong", "No song found.")
@@ -134,11 +139,13 @@ class AmbientRecognitionService : Service() {
                         // if a single identification cycle fails due to brief silence or background noise.
                         
                         // Wait before trying again
+                        serviceStatus.value = "No match. Waiting..."
                         delay(30000) // 30 seconds
                     }
                 } catch (e: Exception) {
                     Log.e("AmbientSong", "Error in recognition loop: ${e.message}", e)
                     isRecording = false
+                    serviceStatus.value = "Error. Retrying..."
                     delay(60000) // longer backoff on error
                 } finally {
                     if (tempFile.exists()) {

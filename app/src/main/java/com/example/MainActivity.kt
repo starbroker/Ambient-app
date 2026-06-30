@@ -80,6 +80,7 @@ fun MainScreen(historyFlow: Flow<List<Song>>, onClearHistory: () -> Unit) {
     val context = LocalContext.current
     val history by historyFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     var isServiceActive by remember { mutableStateOf(AmbientRecognitionService.isServiceRunning) }
+    val serviceStatus by AmbientRecognitionService.serviceStatus.collectAsStateWithLifecycle()
     var showClearDialog by remember { mutableStateOf(false) }
     var showPrivacyDialog by remember { mutableStateOf(false) }
     val isDark = isSystemInDarkTheme()
@@ -158,7 +159,7 @@ fun MainScreen(historyFlow: Flow<List<Song>>, onClearHistory: () -> Unit) {
                     } else {
                         GlassCard(modifier = Modifier.fillMaxWidth().animateContentSize()) {
                             Text(
-                                text = if (isServiceActive) "Service is Running" else "Service is Stopped",
+                                text = if (isServiceActive) serviceStatus else "Service is Stopped",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp,
                                 color = textColor,
@@ -324,14 +325,14 @@ fun SongItem(song: Song, textColor: Color, modifier: Modifier = Modifier, onClic
                     model = song.artworkUrl,
                     contentDescription = "Album Cover",
                     modifier = Modifier
-                        .size(48.dp)
+                        .size(42.dp)
                         .clip(RoundedCornerShape(8.dp)),
                     contentScale = androidx.compose.ui.layout.ContentScale.Crop
                 )
             } else {
                 Box(
                     modifier = Modifier
-                        .size(48.dp)
+                        .size(42.dp)
                         .background(Color(0xFF00E5FF).copy(alpha = 0.2f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
