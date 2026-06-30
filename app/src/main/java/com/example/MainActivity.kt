@@ -42,8 +42,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import androidx.compose.ui.draw.alpha
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.ui.draw.scale
 import coil.compose.AsyncImage
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
@@ -155,15 +156,31 @@ fun MainScreen(historyFlow: Flow<List<Song>>, onClearHistory: () -> Unit) {
                             Text("Grant Required Permissions", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                         }
                     } else {
-                        GlassCard(modifier = Modifier.fillMaxWidth()) {
+                        GlassCard(modifier = Modifier.fillMaxWidth().animateContentSize()) {
+                            val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+                            val pulseScale by infiniteTransition.animateFloat(
+                                initialValue = 1f,
+                                targetValue = if (isServiceActive) 1.03f else 1f,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(1000, easing = FastOutSlowInEasing),
+                                    repeatMode = RepeatMode.Reverse
+                                ), label = "scale"
+                            )
+
                             Text(
                                 text = if (isServiceActive) "Service is Running" else "Service is Stopped",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp,
                                 color = textColor,
-                                modifier = Modifier.align(Alignment.CenterHorizontally)
+                                modifier = Modifier.align(Alignment.CenterHorizontally).scale(if (isServiceActive) pulseScale else 1f)
                             )
                             Spacer(modifier = Modifier.height(24.dp))
+                            
+                            val buttonColor by animateColorAsState(
+                                targetValue = if (isServiceActive) Color(0xFFBDBDBD) else Color(0xFF00E5FF),
+                                animationSpec = tween(500), label = "buttonColor"
+                            )
+                            
                             Button(
                                 onClick = {
                                     val intent = Intent(context, AmbientRecognitionService::class.java)
@@ -180,17 +197,25 @@ fun MainScreen(historyFlow: Flow<List<Song>>, onClearHistory: () -> Unit) {
                                     isServiceActive = !isServiceActive
                                 },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (isServiceActive) Color(0xFFBDBDBD) else Color(0xFF00E5FF),
+                                    containerColor = buttonColor,
                                     contentColor = Color.Black
                                 ),
                                 shape = RoundedCornerShape(24.dp),
-                                modifier = Modifier.height(56.dp).fillMaxWidth()
+                                modifier = Modifier.height(56.dp).fillMaxWidth().scale(if (isServiceActive) pulseScale else 1f)
                             ) {
-                                Text(
-                                    if (isServiceActive) "Stop Ambient Recognition" else "Start Ambient Recognition",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp
-                                )
+                                AnimatedContent(
+                                    targetState = isServiceActive,
+                                    label = "buttonText",
+                                    transitionSpec = {
+                                        fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
+                                    }
+                                ) { active ->
+                                    Text(
+                                        if (active) "Stop Ambient Recognition" else "Start Ambient Recognition",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp
+                                    )
+                                }
                             }
                         }
                     }
