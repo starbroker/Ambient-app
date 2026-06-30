@@ -294,6 +294,16 @@ fun MainScreen(historyFlow: Flow<List<Song>>, onClearHistory: () -> Unit) {
                         }
                     }
                 }
+                
+                item {
+                    Spacer(modifier = Modifier.height(32.dp))
+                    Text(
+                        text = "Developed by Himank.J",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = textColor.copy(alpha = 0.5f),
+                        modifier = Modifier.padding(bottom = 32.dp)
+                    )
+                }
             }
         }
     }
