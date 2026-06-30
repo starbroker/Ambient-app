@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -79,6 +80,7 @@ fun MainScreen(historyFlow: Flow<List<Song>>, onClearHistory: () -> Unit) {
     val history by historyFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     var isServiceActive by remember { mutableStateOf(AmbientRecognitionService.isServiceRunning) }
     var showClearDialog by remember { mutableStateOf(false) }
+    var showPrivacyDialog by remember { mutableStateOf(false) }
     val isDark = isSystemInDarkTheme()
     val textColor = if (isDark) Color.White else Color.Black
 
@@ -96,7 +98,16 @@ fun MainScreen(historyFlow: Flow<List<Song>>, onClearHistory: () -> Unit) {
             containerColor = Color.Transparent,
             topBar = {
                 TopAppBar(
-                    title = { Text("ambient", fontWeight = FontWeight.Bold, color = textColor) },
+                    title = { Text("Ambient", fontWeight = FontWeight.Bold, color = textColor) },
+                    actions = {
+                        IconButton(onClick = { showPrivacyDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = "Privacy and Security",
+                                tint = textColor
+                            )
+                        }
+                    },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent,
                         scrolledContainerColor = Color.Transparent
@@ -104,147 +115,167 @@ fun MainScreen(historyFlow: Flow<List<Song>>, onClearHistory: () -> Unit) {
                 )
             }
         ) { padding ->
-            Column(
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
                     .padding(horizontal = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                Text(
-                    text = "Background Music Identifier",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = textColor
-                )
-                
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "Keep it running in the background. It will notify you when it detects a song.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = textColor.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(40.dp))
-
-                if (!permissionsState.allPermissionsGranted) {
-                    Button(
-                        onClick = { permissionsState.launchMultiplePermissionRequest() },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF), contentColor = Color.Black),
-                        shape = RoundedCornerShape(24.dp),
-                        modifier = Modifier.height(56.dp).fillMaxWidth()
-                    ) {
-                        Text("Grant Required Permissions", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    }
-                } else {
-                    GlassCard(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = if (isServiceActive) "Service is Running" else "Service is Stopped",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp,
-                            color = textColor,
-                            modifier = Modifier.align(Alignment.CenterHorizontally)
-                        )
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Button(
-                            onClick = {
-                                val intent = Intent(context, AmbientRecognitionService::class.java)
-                                if (isServiceActive) {
-                                    intent.action = "STOP"
-                                    context.startService(intent)
-                                } else {
-                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                        context.startForegroundService(intent)
-                                    } else {
-                                        context.startService(intent)
-                                    }
-                                }
-                                isServiceActive = !isServiceActive
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isServiceActive) Color(0xFFBDBDBD) else Color(0xFF00E5FF),
-                                contentColor = Color.Black
-                            ),
-                            shape = RoundedCornerShape(24.dp),
-                            modifier = Modifier.height(56.dp).fillMaxWidth()
-                        ) {
-                            Text(
-                                if (isServiceActive) "Stop Ambient Recognition" else "Start Ambient Recognition",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(48.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
                     Text(
-                        text = "Recent History (Last 5)",
-                        style = MaterialTheme.typography.titleMedium,
+                        text = "Background Music Identifier",
+                        style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = textColor
                     )
-                    if (history.isNotEmpty()) {
-                        TextButton(onClick = { showClearDialog = true }) {
-                            Text("Clear", color = Color.Red)
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Keep it running in the background. It will notify you when it detects a song.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = textColor.copy(alpha = 0.7f),
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(40.dp))
+                }
+
+                item {
+                    if (!permissionsState.allPermissionsGranted) {
+                        Button(
+                            onClick = { permissionsState.launchMultiplePermissionRequest() },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF), contentColor = Color.Black),
+                            shape = RoundedCornerShape(24.dp),
+                            modifier = Modifier.height(56.dp).fillMaxWidth()
+                        ) {
+                            Text("Grant Required Permissions", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        }
+                    } else {
+                        GlassCard(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                text = if (isServiceActive) "Service is Running" else "Service is Stopped",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp,
+                                color = textColor,
+                                modifier = Modifier.align(Alignment.CenterHorizontally)
+                            )
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Button(
+                                onClick = {
+                                    val intent = Intent(context, AmbientRecognitionService::class.java)
+                                    if (isServiceActive) {
+                                        intent.action = "STOP"
+                                        context.startService(intent)
+                                    } else {
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                            context.startForegroundService(intent)
+                                        } else {
+                                            context.startService(intent)
+                                        }
+                                    }
+                                    isServiceActive = !isServiceActive
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isServiceActive) Color(0xFFBDBDBD) else Color(0xFF00E5FF),
+                                    contentColor = Color.Black
+                                ),
+                                shape = RoundedCornerShape(24.dp),
+                                modifier = Modifier.height(56.dp).fillMaxWidth()
+                            ) {
+                                Text(
+                                    if (isServiceActive) "Stop Ambient Recognition" else "Start Ambient Recognition",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
+                                )
+                            }
                         }
                     }
                 }
-                
-                if (showClearDialog) {
-                    AlertDialog(
-                        onDismissRequest = { showClearDialog = false },
-                        title = { Text("Clear History") },
-                        text = { Text("Are you sure you want to delete all saved tracks?") },
-                        confirmButton = {
-                            TextButton(onClick = {
-                                onClearHistory()
-                                showClearDialog = false
-                            }) {
-                                Text("Yes")
-                            }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { showClearDialog = false }) {
-                                Text("No")
+
+                item {
+                    Spacer(modifier = Modifier.height(48.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Recent History (Last 10)",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = textColor
+                        )
+                        if (history.isNotEmpty()) {
+                            TextButton(onClick = { showClearDialog = true }) {
+                                Text("Clear", color = Color.Red)
                             }
                         }
-                    )
-                }
-                Spacer(modifier = Modifier.height(16.dp))
+                    }
+                    
+                    if (showClearDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showClearDialog = false },
+                            title = { Text("Clear History") },
+                            text = { Text("Are you sure you want to delete all saved tracks?") },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    onClearHistory()
+                                    showClearDialog = false
+                                }) {
+                                    Text("Yes")
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showClearDialog = false }) {
+                                    Text("No")
+                                }
+                            }
+                        )
+                    }
 
-                if (history.isEmpty()) {
-                    Text(
-                        text = "No songs identified yet.",
-                        color = textColor.copy(alpha = 0.5f),
-                        modifier = Modifier.padding(top = 16.dp)
-                    )
-                } else {
-                    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(history, key = { it.id }) { song ->
-                            val alpha = remember { Animatable(0f) }
-                            LaunchedEffect(song.id) {
-                                alpha.animateTo(1f, animationSpec = tween(500))
+                    if (showPrivacyDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showPrivacyDialog = false },
+                            title = { Text("Privacy & Security") },
+                            text = { Text("This application requests microphone access to capture short audio samples (10 seconds) of ambient music. This audio is temporarily saved to your device cache and securely sent to a music recognition service. The audio is not stored or shared permanently, and your microphone is only accessed while the service is actively running. All song history is saved locally on your device.") },
+                            confirmButton = {
+                                TextButton(onClick = { showPrivacyDialog = false }) {
+                                    Text("Got it")
+                                }
                             }
-                            SongItem(
-                                song = song,
-                                textColor = textColor,
-                                modifier = Modifier.animateItem().alpha(alpha.value)
-                            ) {
-                                val searchUrl = "https://www.google.com/search?q=${Uri.encode(song.title + " " + song.artist)}"
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(searchUrl))
-                                context.startActivity(intent)
-                            }
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    if (history.isEmpty()) {
+                        Text(
+                            text = "No songs identified yet.",
+                            color = textColor.copy(alpha = 0.5f),
+                            modifier = Modifier.padding(top = 16.dp)
+                        )
+                    }
+                }
+
+                if (history.isNotEmpty()) {
+                    items(history, key = { it.id }) { song ->
+                        val alpha = remember { Animatable(0f) }
+                        LaunchedEffect(song.id) {
+                            alpha.animateTo(1f, animationSpec = tween(500))
+                        }
+                        SongItem(
+                            song = song,
+                            textColor = textColor,
+                            modifier = Modifier.animateItem().alpha(alpha.value).padding(bottom = 12.dp)
+                        ) {
+                            val searchUrl = "https://www.google.com/search?q=${Uri.encode(song.title + " " + song.artist)}"
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(searchUrl))
+                            context.startActivity(intent)
                         }
                     }
                 }

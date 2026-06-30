@@ -30,8 +30,8 @@ interface SongDao {
     @Query("SELECT * FROM songs ORDER BY timestamp DESC")
     suspend fun getRecentSongs(): List<Song>
 
-    @Query("DELETE FROM songs WHERE id NOT IN (SELECT id FROM songs ORDER BY timestamp DESC LIMIT 5)")
-    suspend fun keepOnlyLatest5()
+    @Query("DELETE FROM songs WHERE id NOT IN (SELECT id FROM songs ORDER BY timestamp DESC LIMIT 10)")
+    suspend fun keepOnlyLatest10()
 
     @Query("DELETE FROM songs")
     suspend fun deleteAllSongs()

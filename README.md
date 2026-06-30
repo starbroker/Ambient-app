@@ -1,21 +1,31 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# Ambient
 
-# Run and deploy your AI Studio app
+Ambient is a simple background music identifier for Android that saves your song history and allows for quick Google Searches. It runs a foreground service to periodically listen for and recognize ambient music using the AudD API.
 
-This contains everything you need to run your app locally.
+## Features
+- **Background Music Identification:** Continuously listen for background music while you do other things.
+- **Local History:** Saves the most recently identified songs (last 10 tracks) to your local history.
+- **Quick Search:** Tap on a recognized song to perform a Google Search.
+- **Privacy First:** Only records audio periodically to identify music (temporarily saves up to 10 seconds of audio) and stores everything locally. No personal information is collected.
 
-View your app in AI Studio: https://ai.studio/apps/fda43f17-db79-42c7-aaed-5cfd19b183e3
+## Setup & API Key
+To run the project, you need an AudD API key:
+1. Create a `.env` file based on `.env.example`.
+2. Add your AudD API key:
+   `AUDD_API_KEY=your_audd_api_key`
 
-## Run Locally
+## Architecture & Tech Stack
+- **Kotlin:** Primary language.
+- **Jetpack Compose:** Modern Android UI toolkit.
+- **Room Database:** Local persistence for identified songs history.
+- **Kotlin Coroutines:** For background work and asynchronous API calls.
+- **Foreground Services:** To ensure background monitoring tasks remain active and reliable.
 
-**Prerequisites:**  [Android Studio](https://developer.android.com/studio)
+## Building and Running
+You can compile and build the APK using Gradle:
+```bash
+./gradlew assembleDebug
+```
 
-
-1. Open Android Studio
-2. Select **Open** and choose the directory containing this project
-3. Allow Android Studio to fix any incompatibilities as it imports the project.
-4. Create a file named `.env` in the project directory and set `GEMINI_API_KEY` in that file to your Gemini API key (see `.env.example` for an example)
-5. Remove this line from the app's `build.gradle.kts` file: `signingConfig = signingConfigs.getByName("debugConfig")`
-6. Run the app on an emulator or physical device
+## License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

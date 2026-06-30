@@ -150,9 +150,9 @@ class AmbientRecognitionService : Service() {
     }
 
     private suspend fun handleFoundSong(result: AuddClient.SongResult) {
-        // Insert to DB and keep only latest 5
+        // Insert to DB and keep only latest 10
         db.songDao().insertSong(Song(title = result.title, artist = result.artist, artworkUrl = result.artworkUrl))
-        db.songDao().keepOnlyLatest5()
+        db.songDao().keepOnlyLatest10()
 
         // Fetch artwork as a bitmap if available
         var artworkBitmap: android.graphics.Bitmap? = null

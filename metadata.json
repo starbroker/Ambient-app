@@ -1,5 +1,5 @@
 {
-  "name": "ambient",
+  "name": "Ambient",
   "description": "Background music identifier that saves history and allows quick Google Search.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
