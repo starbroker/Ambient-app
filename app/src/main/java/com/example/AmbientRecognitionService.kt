@@ -97,18 +97,20 @@ class AmbientRecognitionService : Service() {
                         MediaRecorder()
                     }
 
-                    recorder.apply {
-                        setAudioSource(MediaRecorder.AudioSource.MIC)
-                        setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-                        setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-                        setOutputFile(tempFile.absolutePath)
-                        prepare()
-                        start()
-                    }
+                        recorder.apply {
+                            setAudioSource(MediaRecorder.AudioSource.MIC)
+                            setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                            setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                            setAudioEncodingBitRate(128000)
+                            setAudioSamplingRate(44100)
+                            setOutputFile(tempFile.absolutePath)
+                            prepare()
+                            start()
+                        }
 
-                    Log.d("AmbientSong", "Recording started...")
-                    delay(6000) // record for 6 seconds
-                    Log.d("AmbientSong", "Recording stopped.")
+                        Log.d("AmbientSong", "Recording started...")
+                        delay(12000) // record for 12 seconds
+                        Log.d("AmbientSong", "Recording stopped.")
 
                     try {
                         recorder.stop()
@@ -126,14 +128,11 @@ class AmbientRecognitionService : Service() {
                         serviceStatus.value = "Found: ${result.title}"
                         val now = System.currentTimeMillis()
                         
-                        val existingSongs = db.songDao().getRecentSongs()
-                        val isDuplicateInDb = existingSongs.any {
-                            it.title.equals(result.title, ignoreCase = true) &&
-                            it.artist.equals(result.artist, ignoreCase = true)
-                        }
+                        val isDuplicate = result.title.equals(lastDetectedSongTitle, ignoreCase = true) &&
+                                          result.artist.equals(lastDetectedSongArtist, ignoreCase = true)
 
-                        if (isDuplicateInDb) {
-                            Log.d("AmbientSong", "Song already in history/results. Skipping duplicate notification.")
+                        if (isDuplicate) {
+                            Log.d("AmbientSong", "Song is same as last detected. Skipping duplicate notification.")
                         } else {
                             handleFoundSong(result)
                             lastDetectedSongTitle = result.title
