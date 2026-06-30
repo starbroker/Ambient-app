@@ -25,8 +25,11 @@ jobs:
       with:
         gradle-version: '9.3.1'
 
+    - name: Generate dummy debug keystore
+      run: keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+
     - name: Build with Gradle
-      run: gradle assembleDebug
+      run: bash ./gradlew assembleDebug
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
