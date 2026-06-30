@@ -8,6 +8,8 @@ import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.RoomDatabase
+import androidx.room.Room
+import android.content.Context
 import kotlinx.coroutines.flow.Flow
 
 @Entity(tableName = "songs")
@@ -40,4 +42,23 @@ interface SongDao {
 @Database(entities = [Song::class], version = 2, exportSchema = false)
 abstract class SongDatabase : RoomDatabase() {
     abstract fun songDao(): SongDao
+
+    companion object {
+        @Volatile
+        private var INSTANCE: SongDatabase? = null
+
+        fun getDatabase(context: android.content.Context): SongDatabase {
+            return INSTANCE ?: synchronized(this) {
+                val instance = Room.databaseBuilder(
+                    context.applicationContext,
+                    SongDatabase::class.java,
+                    "song-db"
+                )
+                .fallbackToDestructiveMigration()
+                .build()
+                INSTANCE = instance
+                instance
+            }
+        }
+    }
 }

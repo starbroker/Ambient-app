@@ -46,9 +46,7 @@ class AmbientRecognitionService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        db = Room.databaseBuilder(applicationContext, SongDatabase::class.java, "song-db")
-            .fallbackToDestructiveMigration()
-            .build()
+        db = SongDatabase.getDatabase(applicationContext)
         createNotificationChannel()
         
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
@@ -69,22 +67,30 @@ class AmbientRecognitionService : Service() {
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .build()
-        startForeground(NOTIFICATION_ID, notification)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFICATION_ID, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
 
         startRecognitionLoop()
 
         return START_STICKY
     }
 
+    private var recognitionJob: Job? = null
+
     private fun startRecognitionLoop() {
-        serviceScope.launch {
+        recognitionJob?.cancel()
+        recognitionJob = serviceScope.launch {
             while (isActive && isServiceRunning) {
                 val tempFile = File(cacheDir, "ambient_audio.mp4")
+                var recorder: MediaRecorder? = null
                 try {
                     // Record audio
                     serviceStatus.value = "Listening..."
                     isRecording = true
-                    val recorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    recorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                         MediaRecorder(this@AmbientRecognitionService)
                     } else {
                         @Suppress("DEPRECATION")
@@ -104,8 +110,12 @@ class AmbientRecognitionService : Service() {
                     delay(6000) // record for 6 seconds
                     Log.d("AmbientSong", "Recording stopped.")
 
-                    recorder.stop()
-                    recorder.release()
+                    try {
+                        recorder.stop()
+                    } catch (e: RuntimeException) {
+                        // Thrown if no valid audio data has been received
+                        Log.e("AmbientSong", "MediaRecorder.stop() failed", e)
+                    }
                     isRecording = false
 
                     // Identify song
@@ -130,24 +140,28 @@ class AmbientRecognitionService : Service() {
                             lastDetectedSongArtist = result.artist
                             lastDetectedSongTime = now
                         }
-                        // Wait before next listen to avoid spam and save battery
+                        // Wait a short time before next listen
                         serviceStatus.value = "Waiting..."
-                        delay(60000) // 1 minute
+                        delay(5000) // 5 seconds
                     } else {
                         Log.d("AmbientSong", "No song found.")
-                        // Do not reset lastDetectedSongTitle immediately to avoid duplicate notifications
-                        // if a single identification cycle fails due to brief silence or background noise.
-                        
                         // Wait before trying again
                         serviceStatus.value = "No match. Waiting..."
-                        delay(30000) // 30 seconds
+                        delay(5000) // 5 seconds
                     }
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Log.e("AmbientSong", "Error in recognition loop: ${e.message}", e)
                     isRecording = false
                     serviceStatus.value = "Error. Retrying..."
-                    delay(60000) // longer backoff on error
+                    delay(5000) // 5 seconds backoff on error
                 } finally {
+                    try {
+                        recorder?.release()
+                    } catch (e: Exception) {
+                        Log.e("AmbientSong", "Failed to release MediaRecorder", e)
+                    }
                     if (tempFile.exists()) {
                         tempFile.delete()
                     }

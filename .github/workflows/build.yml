@@ -1,10 +1,10 @@
-name: Build Android APK
+name: Build APKs
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "master" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "master" ]
   workflow_dispatch:
 
 jobs:
@@ -13,26 +13,43 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-
-    - name: Set up JDK 21
+    
+    - name: set up JDK 17
       uses: actions/setup-java@v4
       with:
-        java-version: '21'
+        java-version: '17'
         distribution: 'temurin'
 
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
       with:
         gradle-version: '9.3.1'
+        cache: gradle
+        
+    - name: Decode Keystore
+      env:
+        DEBUG_KEYSTORE_BASE64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
+      run: |
+        if [ -n "$DEBUG_KEYSTORE_BASE64" ]; then
+          echo $DEBUG_KEYSTORE_BASE64 | base64 --decode > debug.keystore
+        elif [ -f "debug.keystore.base64" ]; then
+          cat debug.keystore.base64 | base64 --decode > debug.keystore
+        fi
 
-    - name: Generate dummy debug keystore
-      run: keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+    - name: Build Debug APK
+      run: gradle assembleDebug
 
-    - name: Build with Gradle
-      run: bash ./gradlew assembleDebug
+    - name: Build Release APK
+      run: gradle assembleRelease
 
-    - name: Upload APK
+    - name: Upload Debug APK
       uses: actions/upload-artifact@v4
       with:
         name: app-debug
         path: app/build/outputs/apk/debug/app-debug.apk
+
+    - name: Upload Release APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-release
+        path: app/build/outputs/apk/release/app-release.apk

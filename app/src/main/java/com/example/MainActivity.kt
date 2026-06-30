@@ -55,9 +55,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        db = Room.databaseBuilder(applicationContext, SongDatabase::class.java, "song-db")
-            .fallbackToDestructiveMigration()
-            .build()
+        db = SongDatabase.getDatabase(applicationContext)
 
         setContent {
             MyApplicationTheme {
@@ -93,7 +91,10 @@ fun MainScreen(historyFlow: Flow<List<Song>>, onClearHistory: () -> Unit) {
     
     val permissionsState = rememberMultiplePermissionsState(permissions)
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    val showDialog = showClearDialog || showPrivacyDialog
+    val blurRadius by animateDpAsState(if (showDialog) 16.dp else 0.dp, label = "blurRadius")
+
+    Box(modifier = Modifier.fillMaxSize().blur(blurRadius)) {
         GlassBackground()
         
         Scaffold(
@@ -176,8 +177,7 @@ fun MainScreen(historyFlow: Flow<List<Song>>, onClearHistory: () -> Unit) {
                                 onClick = {
                                     val intent = Intent(context, AmbientRecognitionService::class.java)
                                     if (isServiceActive) {
-                                        intent.action = "STOP"
-                                        context.startService(intent)
+                                        context.stopService(intent)
                                     } else {
                                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                                             context.startForegroundService(intent)
@@ -236,19 +236,23 @@ fun MainScreen(historyFlow: Flow<List<Song>>, onClearHistory: () -> Unit) {
                     if (showClearDialog) {
                         AlertDialog(
                             onDismissRequest = { showClearDialog = false },
-                            title = { Text("Clear History") },
-                            text = { Text("Are you sure you want to delete all saved tracks?") },
+                            shape = RoundedCornerShape(28.dp),
+                            containerColor = if (isDark) Color(0xE6121212) else Color(0xE6FFFFFF),
+                            titleContentColor = textColor,
+                            textContentColor = textColor.copy(alpha = 0.8f),
+                            title = { Text("Clear History", fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center) },
+                            text = { Text("Are you sure you want to delete all saved tracks?", modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center) },
                             confirmButton = {
                                 TextButton(onClick = {
                                     onClearHistory()
                                     showClearDialog = false
                                 }) {
-                                    Text("Yes")
+                                    Text("Yes", color = Color.Red, fontWeight = FontWeight.Bold)
                                 }
                             },
                             dismissButton = {
                                 TextButton(onClick = { showClearDialog = false }) {
-                                    Text("No")
+                                    Text("No", color = textColor, fontWeight = FontWeight.Bold)
                                 }
                             }
                         )
@@ -257,11 +261,18 @@ fun MainScreen(historyFlow: Flow<List<Song>>, onClearHistory: () -> Unit) {
                     if (showPrivacyDialog) {
                         AlertDialog(
                             onDismissRequest = { showPrivacyDialog = false },
-                            title = { Text("Privacy & Security") },
-                            text = { Text("This application requests microphone access to capture short audio samples (10 seconds) of ambient music. This audio is temporarily saved to your device cache and securely sent to a music recognition service. The audio is not stored or shared permanently, and your microphone is only accessed while the service is actively running. All song history is saved locally on your device.") },
+                            shape = RoundedCornerShape(28.dp),
+                            containerColor = if (isDark) Color(0xE6121212) else Color(0xE6FFFFFF),
+                            titleContentColor = textColor,
+                            textContentColor = textColor.copy(alpha = 0.8f),
+                            title = { Text("Privacy & Security", fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center) },
+                            text = { Text("This application requests microphone access to capture short audio samples (10 seconds) of ambient music. This audio is temporarily saved to your device cache and securely sent to a music recognition service. The audio is not stored or shared permanently, and your microphone is only accessed while the service is actively running. All song history is saved locally on your device.", textAlign = androidx.compose.ui.text.style.TextAlign.Center) },
                             confirmButton = {
-                                TextButton(onClick = { showPrivacyDialog = false }) {
-                                    Text("Got it")
+                                TextButton(
+                                    onClick = { showPrivacyDialog = false },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Got it", color = Color(0xFF00E5FF), fontWeight = FontWeight.Bold)
                                 }
                             }
                         )
